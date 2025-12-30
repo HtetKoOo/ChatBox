@@ -1,7 +1,5 @@
 import ChatLayout from "@/components/chat/chat-layout"
 import ChatInput from "@/components/chat/chat-input"
-import MessageList from "@/components/chat/message-list"
-import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 
@@ -21,22 +19,12 @@ export default async function Home() {
 
   const users = await getUsers() // Fetch users
 
-  // Fetch initial messages
-  const messages = await prisma.message.findMany({
-    take: 50,
-    orderBy: {
-      createdAt: "asc",
-    },
-    include: {
-      user: true,
-    },
-  })
 
   return (
     <ChatLayout users={users}>
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <MessageList initialMessages={messages} />
-        <ChatInput />
+      <div className="flex flex-1 flex-col items-center justify-center p-4 text-center">
+        <h3 className="text-xl font-semibold">Select a conversation</h3>
+        <p className="text-muted-foreground">Choose a user from the sidebar to start chatting.</p>
       </div>
     </ChatLayout>
   )

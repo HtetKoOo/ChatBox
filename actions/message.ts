@@ -14,7 +14,7 @@ export async function getChatMessages(chatId: string) {
   })
 
   // Check if user is in participants list
-  const isParticipant = chat?.participants.some(p => p.email === session.user?.email)
+  const isParticipant = chat?.participants.some((p: { email: string | null }) => p.email === session.user?.email)
   if (!isParticipant) throw new Error("Unauthorized")
 
   const messages = await prisma.message.findMany({
