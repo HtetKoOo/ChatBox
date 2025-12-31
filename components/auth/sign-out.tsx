@@ -9,7 +9,7 @@ export function SignOut() {
                 await signOut()
             }}
         >
-            <button type="submit" className="text-sm text-red-500 hover:text-red-700 w-full text-left">
+            <button type="submit" className="text-sm text-red-500 hover:text-red-700 w-full text-left cursor-pointer">
                 Sign Out
             </button>
         </form>

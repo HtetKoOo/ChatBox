@@ -3,6 +3,7 @@ import { auth } from "@/auth"
 import { SignIn } from "./sign-in"
 import { SignOut } from "./sign-out"
 import Image from "next/image"
+import { DeleteAccountButton } from "@/components/auth/delete-account-button"
 
 export async function UserButton() {
     const session = await auth()
@@ -10,7 +11,7 @@ export async function UserButton() {
     if (!session?.user) return <SignIn />
 
     return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-5 border-t pt-5">
             {session.user.image && (
                 <Image
                     src={session.user.image}
@@ -22,9 +23,8 @@ export async function UserButton() {
             )}
             <div className="flex flex-col">
                 <span className="text-sm font-medium">{session.user.name}</span>
-                <span className="text-xs text-muted-foreground">
-                    <SignOut />
-                </span>
+                <SignOut />
+                <DeleteAccountButton />
             </div>
         </div>
     )
