@@ -53,3 +53,21 @@ export async function createOrGetChat(otherUserId: string) {
 
   return newChat.id
 }
+
+export async function getChatRoom(chatId: string) {
+  const session = await auth()
+  if (!session?.user?.email) return null
+
+  const chatRoom = await prisma.chatRoom.findUnique({
+    where: { id: chatId },
+    include: { participants: true }
+  })
+
+  if (!chatRoom) return null
+
+  // Verify user is a participant
+  const isParticipant = chatRoom.participants.some(p => p.email === session.user?.email)
+  if (!isParticipant) return null
+
+  return chatRoom
+}

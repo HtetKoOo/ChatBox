@@ -25,3 +25,33 @@ export async function getChatMessages(chatId: string) {
 
   return messages
 }
+
+import { pusherServer } from "@/lib/pusher"
+
+export async function deleteMessage(messageId: string) {
+    const session = await auth()
+    if (!session?.user?.id) throw new Error("Not authenticated")
+
+    const message = await prisma.message.findUnique({
+        where: { id: messageId },
+        select: { userId: true, chatRoomId: true }
+    })
+
+    if (!message) throw new Error("Message not found")
+
+    // Ensure the user is the author of the message
+    if (message.userId !== session.user.id) {
+        throw new Error("Unauthorized to delete this message")
+    }
+
+    await prisma.message.delete({
+        where: { id: messageId }
+    })
+
+    // Trigger Pusher event
+    await pusherServer.trigger(
+        `chat-room-${message.chatRoomId}`,
+        "message-deleted",
+        messageId
+    )
+}

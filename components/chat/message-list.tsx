@@ -1,5 +1,8 @@
 "use client"
 
+import { Trash2 } from "lucide-react"
+import { deleteMessage } from "@/actions/message"
+
 import { useEffect, useState, useRef } from "react"
 import { pusherClient } from "@/lib/pusher"
 import { cn } from "@/lib/utils"
@@ -35,14 +38,15 @@ export default function MessageList({ initialMessages, currentUserId, chatId }: 
         const channel = pusherClient.subscribe(channelName)
 
         channel.bind("upcoming-message", (data: Message) => {
-            // Need to convert string date back to Date object if needed, 
-            // but rendering usually handles strings fine or we parse it
             setMessages((prev) => [...prev, data])
 
-            // Scroll to bottom on new message
             setTimeout(() => {
                 bottomRef.current?.scrollIntoView({ behavior: "smooth" })
             }, 100)
+        })
+
+        channel.bind("message-deleted", (messageId: string) => {
+            setMessages((prev) => prev.filter(m => m.id !== messageId))
         })
 
         return () => {
@@ -50,6 +54,17 @@ export default function MessageList({ initialMessages, currentUserId, chatId }: 
             channel.unbind_all()
         }
     }, [chatId])
+
+    const handleDelete = async (messageId: string) => {
+        try {
+            // Optimistic update
+            setMessages(prev => prev.filter(m => m.id !== messageId))
+            await deleteMessage(messageId)
+        } catch (error) {
+            console.error("Failed to delete message", error)
+            // Revert on error? For now, we rely on refresh or ignoring.
+        }
+    }
 
     return (
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -60,7 +75,7 @@ export default function MessageList({ initialMessages, currentUserId, chatId }: 
                     <div
                         key={message.id}
                         className={cn(
-                            "flex w-full flex-col gap-1",
+                            "group flex w-full flex-col gap-1",
                             isCurrentUser ? "items-end" : "items-start"
                         )}
                     >
@@ -69,18 +84,29 @@ export default function MessageList({ initialMessages, currentUserId, chatId }: 
                                 {message.user.name || "Unknown"}
                             </span>
                         )}
-                        <div
-                            className={cn(
-                                "flex max-w-[80%] flex-col gap-1 rounded-2xl px-4 py-2 shadow-sm",
-                                isCurrentUser
-                                    ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-900"
-                                    : "bg-white border border-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-50"
+                        <div className="flex items-center gap-2 max-w-[80%]">
+                            {isCurrentUser && (
+                                <button
+                                    onClick={() => handleDelete(message.id)}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-red-500"
+                                    title="Delete message"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </button>
                             )}
-                        >
-                            <p className="text-sm">{message.text}</p>
-                            <span suppressHydrationWarning className="text-[10px] opacity-50 self-end">
-                                {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
+                            <div
+                                className={cn(
+                                    "flex flex-col gap-1 rounded-2xl px-4 py-2 shadow-sm",
+                                    isCurrentUser
+                                        ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-900"
+                                        : "bg-white border border-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-50"
+                                )}
+                            >
+                                <p className="text-sm">{message.text}</p>
+                                <span suppressHydrationWarning className="text-[10px] opacity-50 self-end">
+                                    {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 )

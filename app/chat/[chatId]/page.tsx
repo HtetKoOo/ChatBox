@@ -2,7 +2,7 @@
 import ChatLayout from "@/components/chat/chat-layout"
 import { ChatRoom } from "@/components/chat/chat-room"
 import { getChatMessages } from "@/actions/message"
-import { getUsers } from "@/actions/chat"
+import { getUsers, getChatRoom } from "@/actions/chat"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
@@ -14,10 +14,17 @@ export default async function ChatPage({ params }: { params: Promise<{ chatId: s
     const { chatId } = await params
 
     // Parallel data fetching
-    const [messages, users] = await Promise.all([
+
+    const [messages, users, chatRoom] = await Promise.all([
         getChatMessages(chatId),
-        getUsers()
+        getUsers(),
+        getChatRoom(chatId)
     ])
+
+    if (!chatRoom) redirect("/")
+
+    const otherParticipant = chatRoom.participants.find((p) => p.email !== session.user?.email)
+    const chatName = chatRoom.name || otherParticipant?.name || "Chat"
 
     const currentUser = await prisma.user.findUnique({
         where: { email: session.user.email! },
@@ -28,7 +35,12 @@ export default async function ChatPage({ params }: { params: Promise<{ chatId: s
 
     return (
         <ChatLayout users={users}>
-            <ChatRoom initialMessages={messages} chatId={chatId} currentUserId={currentUser.id} />
+            <ChatRoom
+                initialMessages={messages}
+                chatId={chatId}
+                currentUserId={currentUser.id}
+                chatName={chatName}
+            />
         </ChatLayout>
     )
 }
